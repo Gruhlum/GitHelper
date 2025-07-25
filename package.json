@@ -1,0 +1,12 @@
+{
+  "name": "com.hextecgames.githelper",
+  "version": "1.0.0",
+  "displayName": "GitHelper",
+  "description": "My Package",
+  "unity": "2022.1",
+  "dependencies": {},
+  "author": {
+    "name": "HexTecGames"
+  },
+  "hideInEditor": "false"
+}

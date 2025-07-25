@@ -1,0 +1,19 @@
+{
+    "name": "HexTecGames.GitHelper.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:4cc4c207c147801449ee01314a8f99b8",
+        "GUID:4b15c8b473153fd48b7d58c11fe5b50f"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

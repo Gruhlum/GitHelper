@@ -99,7 +99,6 @@ namespace HexTecGames.Basics.Editor
             int startIndex = output.IndexOf(keyWord) + keyWord.Length;
 
             Debug.Log(output);
-
             return output.Substring(startIndex);
         }
 

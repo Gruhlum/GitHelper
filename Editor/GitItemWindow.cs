@@ -79,46 +79,42 @@ namespace HexTecGames.Basics.Editor
             return output.Trim().Split('\n').Last();
         }
 
-        private string Run()
+        string RunGitCommand(string arguments)
         {
-            IncreasePackageVersion(fullPath);
-
             var psi = new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c cd {fullPath} && git add . && git commit -m \"{commitMessage}\" && git push",
+                FileName = "git",
+                Arguments = arguments,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
 
-            using (var cmdProcess = new Process { StartInfo = psi })
+            using (var process = Process.Start(psi))
             {
-                cmdProcess.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
 
-                // Read both output and error asynchronously
-                string output = cmdProcess.StandardOutput.ReadToEnd();
-                string error = cmdProcess.StandardError.ReadToEnd();
-
-                cmdProcess.WaitForExit(); // Ensures cmd has finished
+                process.WaitForExit();
 
                 Debug.Log(output);
-                Debug.LogError(error); // optional, helps diagnose silent failures
+                Debug.LogError(error);
 
-                string keyWord = "Enumerating objects";
-                int startIndex = output.IndexOf(keyWord);
-
-                if (startIndex >= 0)
-                {
-                    startIndex += keyWord.Length;
-                    return output.Substring(startIndex).Trim();
-                }
-                else
-                {
-                    return "Keyword not found.";
-                }
+                return output;
             }
+        }
+
+        private string Run()
+        {
+            IncreasePackageVersion(fullPath);
+
+            // Run Git commands separately
+            Directory.SetCurrentDirectory(fullPath);
+            RunGitCommand("add .");
+            RunGitCommand($"commit -m \"{commitMessage}\"");
+            string pushOutput = RunGitCommand("push");
+            return pushOutput;
         }
 
 

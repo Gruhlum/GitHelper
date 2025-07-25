@@ -83,23 +83,42 @@ namespace HexTecGames.Basics.Editor
         {
             IncreasePackageVersion(fullPath);
 
-            ProcessStartInfo psi = new ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
                 Arguments = $"/c cd {fullPath} && git add . && git commit -m \"{commitMessage}\" && git push",
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
 
-            var cmdProcess = Process.Start(psi);
-            string output = cmdProcess.StandardOutput.ReadToEnd();
-            cmdProcess.WaitForExit();
-            string keyWord = "Enumerating objects:";
-            int startIndex = output.IndexOf(keyWord) + keyWord.Length;
+            using (var cmdProcess = new Process { StartInfo = psi })
+            {
+                cmdProcess.Start();
 
-            Debug.Log(output);
-            return output.Substring(startIndex);
+                // Read both output and error asynchronously
+                string output = cmdProcess.StandardOutput.ReadToEnd();
+                string error = cmdProcess.StandardError.ReadToEnd();
+
+                cmdProcess.WaitForExit(); // Ensures cmd has finished
+
+                Debug.Log(output);
+                Debug.LogError(error); // optional, helps diagnose silent failures
+
+                string keyWord = "Enumerating objects:";
+                int startIndex = output.IndexOf(keyWord);
+
+                if (startIndex >= 0)
+                {
+                    startIndex += keyWord.Length;
+                    return output.Substring(startIndex).Trim();
+                }
+                else
+                {
+                    return "Keyword not found.";
+                }
+            }
         }
 
 

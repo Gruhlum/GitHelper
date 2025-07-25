@@ -95,7 +95,10 @@ namespace HexTecGames.Basics.Editor
             var cmdProcess = Process.Start(psi);
             string output = cmdProcess.StandardOutput.ReadToEnd();
             cmdProcess.WaitForExit();
-            return output.Trim().Split('\n').Last();
+            string keyWord = "$ git push";
+            int startIndex = output.IndexOf(keyWord) + keyWord.Length;
+
+            return output.Substring(startIndex);
         }
 
         private void IncreasePackageVersion(string path)
@@ -141,7 +144,7 @@ namespace HexTecGames.Basics.Editor
             {
                 if (GUILayout.Button("Start", GUILayout.Height(30)))
                 {
-                    helpText = Run();
+                    changeText = Run();
                     isComplete = CheckIfComplete();
                     if (!isComplete)
                     {

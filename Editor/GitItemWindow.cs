@@ -93,15 +93,11 @@ namespace HexTecGames.Basics.Editor
 
             using (var process = Process.Start(psi))
             {
-                string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
 
                 process.WaitForExit();
-
-                Debug.Log(output);
                 Debug.LogError(error);
-
-                return output;
+                return error;
             }
         }
 

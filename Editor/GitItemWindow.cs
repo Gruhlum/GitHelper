@@ -67,7 +67,7 @@ namespace HexTecGames.Basics.Editor
             ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = $"/c cd {fullPath} && {diff}",
+                Arguments = $"/c cd {path} && {diff}",
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
@@ -98,6 +98,8 @@ namespace HexTecGames.Basics.Editor
             string keyWord = "Enumerating objects:";
             int startIndex = output.IndexOf(keyWord) + keyWord.Length;
 
+            Debug.Log(output);
+
             return output.Substring(startIndex);
         }
 
@@ -106,7 +108,7 @@ namespace HexTecGames.Basics.Editor
             string fullFilePath = path + "\\package.json";
             string jsonText = File.ReadAllText(fullFilePath);
             // "version": "4.1.6"
-            jsonText = jsonText.Replace($"\"version\": {currentVersion.ToString()}", $"\"version\": {nextVersion.ToString()}");
+            jsonText = jsonText.Replace($"\"version\": \"{currentVersion.ToString()}\"", $"\"version\": \"{nextVersion.ToString()}\"");
             File.WriteAllText(fullFilePath, jsonText);
         }
 

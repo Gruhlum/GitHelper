@@ -102,6 +102,7 @@ namespace HexTecGames.Basics.Editor
             return output.Substring(startIndex);
         }
 
+
         private void IncreasePackageVersion(string path)
         {
             string fullFilePath = path + "\\package.json";

@@ -95,7 +95,7 @@ namespace HexTecGames.Basics.Editor
             var cmdProcess = Process.Start(psi);
             string output = cmdProcess.StandardOutput.ReadToEnd();
             cmdProcess.WaitForExit();
-            string keyWord = "$ git push";
+            string keyWord = "Enumerating objects:";
             int startIndex = output.IndexOf(keyWord) + keyWord.Length;
 
             return output.Substring(startIndex);

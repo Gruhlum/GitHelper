@@ -110,10 +110,12 @@ namespace HexTecGames.Basics.Editor
             IncreasePackageVersion(fullPath);
 
             // Run Git commands separately
+            var lastDirectory = Directory.GetCurrentDirectory();
             Directory.SetCurrentDirectory(fullPath);
             RunGitCommand("add .");
             RunGitCommand($"commit -m \"{commitMessage}\"");
             string pushOutput = RunGitCommand("push");
+            Directory.SetCurrentDirectory(lastDirectory);
             return pushOutput;
         }
 

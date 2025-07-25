@@ -106,7 +106,7 @@ namespace HexTecGames.Basics.Editor
                 Debug.Log(output);
                 Debug.LogError(error); // optional, helps diagnose silent failures
 
-                string keyWord = "Enumerating objects:";
+                string keyWord = "Enumerating objects";
                 int startIndex = output.IndexOf(keyWord);
 
                 if (startIndex >= 0)

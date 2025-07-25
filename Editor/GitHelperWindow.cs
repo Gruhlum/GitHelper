@@ -19,7 +19,7 @@ namespace HexTecGames.Basics.Editor
         private List<string> hasChangesPaths = new List<string>();
 
         private string helpText;
-
+        private string changedPackageNames;
 
         [MenuItem("Tools/Git Helper")]
         public static void ShowWindow()
@@ -31,8 +31,6 @@ namespace HexTecGames.Basics.Editor
         {
             GetSubFolders();
         }
-
-
 
         private void OnGUI()
         {
@@ -68,6 +66,8 @@ namespace HexTecGames.Basics.Editor
             {
                 EditorGUILayout.HelpBox(helpText, MessageType.Info);
             }
+
+            EditorGUILayout.LabelField(changedPackageNames, GUILayout.ExpandHeight(true));
         }
 
         private bool IsGitRepo(string path)
@@ -102,20 +102,17 @@ namespace HexTecGames.Basics.Editor
             }
 
             hasChangesPaths = new List<string>();
-
-
+            List<string> packageNamesWithChanges = new List<string>();
             foreach (var path in folderPaths)
             {
-                // Run cmd and check with git status if any changes are needed
-                // If not, continue
-                // Else run git add and open an input prompt where the user can enter a commit msg
-                // Increment the version number
-                // run git push
                 if (HasChanges(path))
                 {
                     hasChangesPaths.Add(path);
+                    DirectoryInfo dirInfo = new DirectoryInfo(path);
+                    packageNamesWithChanges.Add(dirInfo.Name);
                 }
             }
+            changedPackageNames = string.Join(System.Environment.NewLine, packageNamesWithChanges);
         }
 
         //public string Run()

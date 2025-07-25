@@ -2,11 +2,9 @@
   "name": "com.hextecgames.githelper",
   "version": "1.0.0",
   "displayName": "GitHelper",
-  "description": "My Package",
+  "description": "Automates pushing changes for multiple packages.",
   "unity": "2022.1",
-  "dependencies": {},
   "author": {
     "name": "HexTecGames"
-  },
-  "hideInEditor": "false"
+  }
 }

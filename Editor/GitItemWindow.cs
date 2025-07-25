@@ -24,10 +24,9 @@ namespace HexTecGames.Basics.Editor
         string helpText;
 
         string changeText;
+        string shortStats;
 
-        GUIStyle redText;
-        GUIStyle greenText;
-
+        GUIStyle centerTextAlignmentStyle;
 
         private List<string> allPaths;
         private int packageIndex = 0;
@@ -35,11 +34,9 @@ namespace HexTecGames.Basics.Editor
 
         private void OnEnable()
         {
-            redText = new GUIStyle();
-            redText.normal.textColor = Color.red;
-
-            greenText = new GUIStyle();
-            greenText.normal.textColor = Color.red;
+            centerTextAlignmentStyle = new GUIStyle();
+            centerTextAlignmentStyle.normal.textColor = Color.white;
+            centerTextAlignmentStyle.alignment = TextAnchor.MiddleCenter;
         }
 
         public void Setup(List<string> paths)
@@ -59,8 +56,27 @@ namespace HexTecGames.Basics.Editor
             nextVersion = currentVersion.GetIncreasedVersion(UpdateType.Minor);
             displayName = GetJsonValue(jsonText, "displayName");
             modifiedFiles = GetModifiedFileNames(path);
-
             changeText = string.Join(Environment.NewLine, modifiedFiles);
+            shortStats = GetShortStats(path);
+        }
+
+        private string GetShortStats(string path)
+        {
+            string diff = "git diff HEAD --shortstat";
+
+            ProcessStartInfo psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c cd {fullPath} && {diff}",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            var cmdProcess = Process.Start(psi);
+            string output = cmdProcess.StandardOutput.ReadToEnd();
+            cmdProcess.WaitForExit();
+            return output.Trim().Split('\n').Last();
         }
 
         private string Run()
@@ -138,9 +154,11 @@ namespace HexTecGames.Basics.Editor
             {
                 EditorGUILayout.HelpBox(helpText, MessageType.Info);
             }
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField(shortStats, centerTextAlignmentStyle);
+            EditorGUILayout.Space();
             EditorGUILayout.LabelField(changeText, GUILayout.ExpandHeight(true));
         }
-
 
         private bool CheckIfComplete()
         {

@@ -4,11 +4,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using HexTecGames.Basics;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+
 
 namespace HexTecGames.Basics.Editor
 {
@@ -70,21 +69,6 @@ namespace HexTecGames.Basics.Editor
 
             EditorGUILayout.LabelField(changedPackageNames, GUILayout.ExpandHeight(true));
         }
-
-        private bool IsGitRepo(string path)
-        {
-            var subDirs = Directory.GetDirectories(path);
-            foreach (var subDir in subDirs)
-            {
-                var dirInfo = new DirectoryInfo(subDir);
-                if (dirInfo.Name == ".git")
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         List<string> GetFilteredDirectories(string rootPath)
         {
             var result = new List<string>();
@@ -133,55 +117,33 @@ namespace HexTecGames.Basics.Editor
             changedPackageNames = string.Join(Environment.NewLine, packageNamesWithChanges);
         }
 
-        //public string Run()
-        //{
-        //    if (hasChangesPaths.Count <= 0)
-        //    {
-        //        return $"{folderPaths.Count} files checked in {packageFolder}";
-        //    }
-
-        //    foreach (var path in hasChangesPaths)
-        //    {
-        //        StartCommit(path);
-        //    }
-        //    return $"{folderPaths.Count} files checked in {packageFolder}";
-        //}
-
-        //private void StartCommit(string path)
-        //{
-        //    ProcessStartInfo psi = new ProcessStartInfo
-        //    {
-        //        FileName = "cmd.exe",
-        //        Arguments = $"/K \"cd /d {path} && git status\"",
-        //        UseShellExecute = true,
-        //        CreateNoWindow = false,
-        //    };
-
-        //    var cmdProcess = Process.Start(psi);
-        //    cmdProcess.WaitForExit();
-        //}
-
         private bool HasChanges(string path)
         {
-            ProcessStartInfo psi = new ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c cd {path} && git status",
+                FileName = "git",
+                Arguments = "status --porcelain",
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                WorkingDirectory = path
             };
 
-            var cmdProcess = Process.Start(psi);
-            string output = cmdProcess.StandardOutput.ReadToEnd();
-            cmdProcess.WaitForExit();
-            string lastLine = output.Trim().Split('\n').Last();
-            if (string.IsNullOrEmpty(lastLine))
+            using (var gitProcess = Process.Start(psi))
             {
-                return false;
+                string output = gitProcess.StandardOutput.ReadToEnd();
+                string error = gitProcess.StandardError.ReadToEnd();
+                gitProcess.WaitForExit();
+
+                // Optionally check error output for diagnostics
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    Debug.LogWarning($"Git error in '{path}': {error.Trim()}");
+                }
+
+                return !string.IsNullOrWhiteSpace(output); // If there's output, the working tree has changes
             }
-            //Debug.Log(path + " - " + lastLine);
-            return lastLine != "nothing to commit, working tree clean";
         }
     }
 }

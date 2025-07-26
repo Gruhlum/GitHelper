@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
-using HexTecGames.Basics;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -68,21 +66,30 @@ namespace HexTecGames.Basics.Editor
 
         private string GetShortStats(string path)
         {
-            string diff = "git diff HEAD --shortstat";
-
-            ProcessStartInfo psi = new ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c cd {path} && {diff}",
+                FileName = "git",
+                Arguments = "diff HEAD --shortstat",
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                WorkingDirectory = path
             };
 
-            var cmdProcess = Process.Start(psi);
-            string output = cmdProcess.StandardOutput.ReadToEnd();
-            cmdProcess.WaitForExit();
-            return output.Trim().Split('\n').Last();
+            using (var gitProcess = Process.Start(psi))
+            {
+                string output = gitProcess.StandardOutput.ReadToEnd();
+                string error = gitProcess.StandardError.ReadToEnd();
+                gitProcess.WaitForExit();
+
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    Debug.LogWarning($"Git error in '{path}': {error.Trim()}");
+                }
+
+                return output.Trim().Split('\n').LastOrDefault() ?? string.Empty;
+            }
         }
 
         string RunGitCommand(string arguments)
@@ -204,37 +211,48 @@ namespace HexTecGames.Basics.Editor
 
         public List<string> GetModifiedFileNames(string path)
         {
-            ProcessStartInfo psi = new ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c cd {path} && git status",
+                FileName = "git",
+                Arguments = "status --porcelain",
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                WorkingDirectory = path
             };
 
-            var cmdProcess = Process.Start(psi);
-            string output = cmdProcess.StandardOutput.ReadToEnd();
-            cmdProcess.WaitForExit();
+            var results = new List<string>();
 
-
-            string[] allLines = output.Trim().Split('\n');
-            var results = allLines.Where(line => line.StartsWith("\t")).ToList();
-
-
-            for (int i = results.Count - 1; i >= 0; i--)
+            using (var gitProcess = Process.Start(psi))
             {
-                string result = results[i];
-                if (result.EndsWith(".cs.meta"))
+                string output = gitProcess.StandardOutput.ReadToEnd();
+                string error = gitProcess.StandardError.ReadToEnd();
+                gitProcess.WaitForExit();
+
+                if (!string.IsNullOrWhiteSpace(error))
                 {
-                    results.RemoveAt(i);
-                    continue;
+                    Debug.LogWarning($"Git error in '{path}': {error.Trim()}");
                 }
-                if (!result.StartsWith("\tdeleted") && !result.StartsWith("\tmodified"))
+
+                var lines = output.Split('\n');
+
+                foreach (var line in lines)
                 {
-                    result = "\tadded:" + result;
+                    if (line.Length < 3) continue;
+
+                    string statusCode = line.Substring(0, 2);
+                    if (statusCode == "??")
+                    {
+                        statusCode = " A";
+                    }
+                    string filePath = line.Substring(3);
+
+                    if (filePath.EndsWith(".cs.meta")) continue;
+
+                    string result = $"{statusCode}\t{filePath}";
+                    results.Add(result);
                 }
-                results[i] = result;
             }
 
             return results;

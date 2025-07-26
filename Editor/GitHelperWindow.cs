@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,7 +14,7 @@ namespace HexTecGames.Basics.Editor
 {
     public class GitHelperWindow : EditorWindow
     {
-        [SerializeField] private string packageFolder = "C:\\Users\\Patrick\\Documents\\Projects\\Unity\\_Misc\\Packages";
+        [SerializeField] private string rootPath = "C:\\Users\\Patrick\\Documents\\Projects\\Unity";
 
         private List<string> folderPaths = new List<string>();
         private List<string> hasChangesPaths = new List<string>();
@@ -35,7 +36,7 @@ namespace HexTecGames.Basics.Editor
         private void OnGUI()
         {
             EditorGUILayout.LabelField("Path");
-            packageFolder = EditorGUILayout.TextField(label: string.Empty, packageFolder);
+            rootPath = EditorGUILayout.TextField(label: string.Empty, rootPath);
 
             EditorGUILayout.Space();
 
@@ -84,22 +85,39 @@ namespace HexTecGames.Basics.Editor
             return false;
         }
 
+        List<string> GetFilteredDirectories(string rootPath)
+        {
+            var result = new List<string>();
+
+            void Search(string currentPath)
+            {
+                // Check if this folder contains a .git subfolder
+                if (Directory.GetDirectories(currentPath).Any(d =>
+                    Path.GetFileName(d).Equals(".git", StringComparison.OrdinalIgnoreCase)))
+                {
+                    result.Add(currentPath);
+                    return; // Stop exploring deeper into this folder
+                }
+
+                // Otherwise, recurse into each subfolder
+                foreach (var subDir in Directory.GetDirectories(currentPath))
+                {
+                    Search(subDir);
+                }
+            }
+
+            Search(rootPath);
+            return result;
+        }
+
         private void GetSubFolders()
         {
-            if (string.IsNullOrEmpty(packageFolder))
+            if (string.IsNullOrEmpty(rootPath))
             {
                 return;
             }
 
-            folderPaths = Directory.GetDirectories(packageFolder, "*", SearchOption.AllDirectories).ToList();
-
-            for (int i = folderPaths.Count - 1; i >= 0; i--)
-            {
-                if (!IsGitRepo(folderPaths[i]))
-                {
-                    folderPaths.RemoveAt(i);
-                }
-            }
+            folderPaths = GetFilteredDirectories(rootPath);
 
             hasChangesPaths = new List<string>();
             List<string> packageNamesWithChanges = new List<string>();
@@ -112,7 +130,7 @@ namespace HexTecGames.Basics.Editor
                     packageNamesWithChanges.Add(dirInfo.Name);
                 }
             }
-            changedPackageNames = string.Join(System.Environment.NewLine, packageNamesWithChanges);
+            changedPackageNames = string.Join(Environment.NewLine, packageNamesWithChanges);
         }
 
         //public string Run()

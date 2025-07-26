@@ -102,7 +102,10 @@ namespace HexTecGames.Basics.Editor
                 string error = process.StandardError.ReadToEnd();
 
                 process.WaitForExit();
-                Debug.LogError(error);
+                if (!string.IsNullOrEmpty(error))
+                {
+                    Debug.Log(error);
+                }
                 return error;
             }
         }

@@ -1,6 +1,6 @@
 {
   "name": "com.hextecgames.githelper",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "displayName": "GitHelper",
   "description": "Automates pushing changes for multiple packages.",
   "unity": "2022.1",

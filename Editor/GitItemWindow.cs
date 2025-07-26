@@ -49,12 +49,18 @@ namespace HexTecGames.Basics.Editor
         private void Setup(string path)
         {
             fullPath = path;
-            string jsonText = File.ReadAllText(path + "\\package.json");
 
-            //string name = GetJsonValue(jsonText, "name");
-            currentVersion = new VersionNumber(GetJsonValue(jsonText, "version"));
-            nextVersion = currentVersion.GetIncreasedVersion(UpdateType.Minor);
-            displayName = GetJsonValue(jsonText, "displayName");
+            string packagePath = path + "\\package.json";
+
+            if (File.Exists(packagePath))
+            {
+                string jsonText = File.ReadAllText(packagePath);
+                currentVersion = new VersionNumber(GetJsonValue(jsonText, "version"));
+                nextVersion = currentVersion.GetIncreasedVersion(UpdateType.Minor);
+                displayName = GetJsonValue(jsonText, "displayName");
+            }
+            else displayName = new DirectoryInfo(path).Name;
+
             modifiedFiles = GetModifiedFileNames(path);
             changeText = string.Join(Environment.NewLine, modifiedFiles);
             shortStats = GetShortStats(path);
@@ -103,7 +109,10 @@ namespace HexTecGames.Basics.Editor
 
         private string Run()
         {
-            IncreasePackageVersion(fullPath);
+            if (currentVersion != null)
+            {
+                IncreasePackageVersion(fullPath);
+            }
 
             // Run Git commands separately
             var lastDirectory = Directory.GetCurrentDirectory();
@@ -114,7 +123,6 @@ namespace HexTecGames.Basics.Editor
             Directory.SetCurrentDirectory(lastDirectory);
             return pushOutput;
         }
-
 
         private void IncreasePackageVersion(string path)
         {
@@ -133,17 +141,20 @@ namespace HexTecGames.Basics.Editor
                 return;
             }
 
-            EditorGUILayout.LabelField("Package:", displayName);
-            EditorGUILayout.LabelField("Current Version:", currentVersion.ToString());
-            EditorGUILayout.LabelField("Next Version:", nextVersion.ToString());
+            EditorGUILayout.LabelField("Name:", displayName);
 
-            int currentIndex = GUILayout.Toolbar(selectedIndex, Enum.GetNames(typeof(UpdateType)));
-            if (currentIndex != selectedIndex)
+            if (currentVersion != null && nextVersion != null)
             {
-                selectedIndex = currentIndex;
-                nextVersion = currentVersion.GetIncreasedVersion((UpdateType)currentIndex);
-            }
+                EditorGUILayout.LabelField("Current Version:", currentVersion.ToString());
+                EditorGUILayout.LabelField("Next Version:", nextVersion.ToString());
 
+                int currentIndex = GUILayout.Toolbar(selectedIndex, Enum.GetNames(typeof(UpdateType)));
+                if (currentIndex != selectedIndex)
+                {
+                    selectedIndex = currentIndex;
+                    nextVersion = currentVersion.GetIncreasedVersion((UpdateType)currentIndex);
+                }
+            }
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Commit Message");
             EditorGUILayout.TextArea(commitMessage, GUILayout.Height(32));
@@ -157,7 +168,7 @@ namespace HexTecGames.Basics.Editor
             }
             else
             {
-                if (GUILayout.Button("Start", GUILayout.Height(30)))
+                if (GUILayout.Button("Add, Commit & Push", GUILayout.Height(30)))
                 {
                     changeText = Run();
                     isComplete = CheckIfComplete();
@@ -167,7 +178,7 @@ namespace HexTecGames.Basics.Editor
                     }
                 }
             }
-           
+
             if (!string.IsNullOrEmpty(helpText))
             {
                 EditorGUILayout.HelpBox(helpText, MessageType.Info);

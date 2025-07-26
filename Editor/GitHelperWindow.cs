@@ -91,7 +91,7 @@ namespace HexTecGames.Basics.Editor
                 return;
             }
 
-            folderPaths = Directory.GetDirectories(packageFolder).ToList();
+            folderPaths = Directory.GetDirectories(packageFolder, "*", SearchOption.AllDirectories).ToList();
 
             for (int i = folderPaths.Count - 1; i >= 0; i--)
             {

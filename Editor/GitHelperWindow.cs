@@ -30,6 +30,7 @@ namespace HexTecGames.Basics.Editor
         private void OnEnable()
         {
             GetSubFolders();
+            titleContent = new GUIContent("Git Helper");
         }
 
         private void OnGUI()
@@ -39,7 +40,7 @@ namespace HexTecGames.Basics.Editor
 
             EditorGUILayout.Space();
 
-            EditorGUILayout.LabelField("Total Packages:", folderPaths.Count.ToString());
+            EditorGUILayout.LabelField("Total Repositories:", folderPaths.Count.ToString());
             EditorGUILayout.LabelField("With Changes:", hasChangesPaths.Count.ToString());
 
             EditorGUILayout.Space();

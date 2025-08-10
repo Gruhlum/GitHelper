@@ -35,114 +35,8 @@ namespace HexTecGames.Basics.Editor
             centerTextAlignmentStyle = new GUIStyle();
             centerTextAlignmentStyle.normal.textColor = Color.white;
             centerTextAlignmentStyle.alignment = TextAnchor.MiddleCenter;
+            titleContent = new GUIContent("Git Action");
         }
-
-        public void Setup(List<string> paths)
-        {
-            allPaths = paths;
-            packageIndex = 0;
-            Setup(allPaths[packageIndex]);
-        }
-
-        private void Setup(string path)
-        {
-            fullPath = path;
-
-            string packagePath = path + "\\package.json";
-
-            if (File.Exists(packagePath))
-            {
-                string jsonText = File.ReadAllText(packagePath);
-                currentVersion = new VersionNumber(GetJsonValue(jsonText, "version"));
-                nextVersion = currentVersion.GetIncreasedVersion(UpdateType.Minor);
-                displayName = GetJsonValue(jsonText, "displayName");
-            }
-            else displayName = new DirectoryInfo(path).Name;
-
-            modifiedFiles = GetModifiedFileNames(path);
-            changeText = string.Join(Environment.NewLine, modifiedFiles);
-            shortStats = GetShortStats(path);
-        }
-
-        private string GetShortStats(string path)
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = "diff HEAD --shortstat",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = path
-            };
-
-            using (var gitProcess = Process.Start(psi))
-            {
-                string output = gitProcess.StandardOutput.ReadToEnd();
-                string error = gitProcess.StandardError.ReadToEnd();
-                gitProcess.WaitForExit();
-
-                if (!string.IsNullOrWhiteSpace(error))
-                {
-                    Debug.LogWarning($"Git error in '{path}': {error.Trim()}");
-                }
-
-                return output.Trim().Split('\n').LastOrDefault() ?? string.Empty;
-            }
-        }
-
-        string RunGitCommand(string arguments)
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using (var process = Process.Start(psi))
-            {
-                string error = process.StandardError.ReadToEnd();
-
-                process.WaitForExit();
-                if (!string.IsNullOrEmpty(error))
-                {
-                    Debug.Log(error);
-                }
-                return error;
-            }
-        }
-
-        private string Run()
-        {
-            if (currentVersion != null)
-            {
-                IncreasePackageVersion(fullPath);
-            }
-
-            // Run Git commands separately
-            var lastDirectory = Directory.GetCurrentDirectory();
-            Directory.SetCurrentDirectory(fullPath);
-            RunGitCommand("add .");
-            RunGitCommand($"commit -m \"{commitMessage}\"");
-            string pushOutput = RunGitCommand("push");
-            Directory.SetCurrentDirectory(lastDirectory);
-            return pushOutput;
-        }
-
-        private void IncreasePackageVersion(string path)
-        {
-            string fullFilePath = path + "\\package.json";
-            string jsonText = File.ReadAllText(fullFilePath);
-            // "version": "4.1.6"
-            jsonText = jsonText.Replace($"\"version\": \"{currentVersion.ToString()}\"", $"\"version\": \"{nextVersion.ToString()}\"");
-            File.WriteAllText(fullFilePath, jsonText);
-        }
-
         private void OnGUI()
         {
             if (string.IsNullOrEmpty(fullPath))
@@ -198,15 +92,117 @@ namespace HexTecGames.Basics.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(changeText, GUILayout.ExpandHeight(true));
         }
-
-        private bool CheckIfComplete()
+        public void Setup(List<string> paths)
         {
-            return packageIndex >= allPaths.Count - 1;
+            allPaths = paths;
+            packageIndex = 0;
+            Setup(allPaths[packageIndex]);
+        }
+        private void Setup(string path)
+        {
+            fullPath = path;
+
+            string packagePath = path + "\\package.json";
+
+            if (File.Exists(packagePath))
+            {
+                string jsonText = File.ReadAllText(packagePath);
+                currentVersion = new VersionNumber(GetJsonValue(jsonText, "version"));
+                nextVersion = currentVersion.GetIncreasedVersion(UpdateType.Minor);
+                displayName = GetJsonValue(jsonText, "displayName");
+            }
+            else displayName = new DirectoryInfo(path).Name;
+
+            modifiedFiles = GetModifiedFileNames(path);
+            changeText = string.Join(Environment.NewLine, modifiedFiles);
+            shortStats = GetShortStats(path);
         }
         private void SetupNextItem()
         {
+            selectedIndex = 1;
             packageIndex++;
             Setup(allPaths[packageIndex]);
+        }
+
+        private string Run()
+        {
+            if (currentVersion != null)
+            {
+                IncreasePackageVersion(fullPath);
+            }
+
+            // Run Git commands separately
+            var lastDirectory = Directory.GetCurrentDirectory();
+            Directory.SetCurrentDirectory(fullPath);
+            RunGitCommand("add .");
+            RunGitCommand($"commit -m \"{commitMessage}\"");
+            string pushOutput = RunGitCommand("push");
+            Directory.SetCurrentDirectory(lastDirectory);
+            return pushOutput;
+        }
+        private string RunGitCommand(string arguments)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using (var process = Process.Start(psi))
+            {
+                string error = process.StandardError.ReadToEnd();
+
+                process.WaitForExit();
+                if (!string.IsNullOrEmpty(error))
+                {
+                    Debug.Log(error);
+                }
+                return error;
+            }
+        }
+        private void IncreasePackageVersion(string path)
+        {
+            string fullFilePath = path + "\\package.json";
+            string jsonText = File.ReadAllText(fullFilePath);
+            // "version": "4.1.6"
+            jsonText = jsonText.Replace($"\"version\": \"{currentVersion.ToString()}\"", $"\"version\": \"{nextVersion.ToString()}\"");
+            File.WriteAllText(fullFilePath, jsonText);
+        }
+
+        private string GetShortStats(string path)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "diff HEAD --shortstat",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = path
+            };
+
+            using (var gitProcess = Process.Start(psi))
+            {
+                string output = gitProcess.StandardOutput.ReadToEnd();
+                string error = gitProcess.StandardError.ReadToEnd();
+                gitProcess.WaitForExit();
+
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    Debug.LogWarning($"Git error in '{path}': {error.Trim()}");
+                }
+
+                return output.Trim().Split('\n').LastOrDefault() ?? string.Empty;
+            }
+        }
+        private bool CheckIfComplete()
+        {
+            return packageIndex >= allPaths.Count - 1;
         }
 
         public List<string> GetModifiedFileNames(string path)

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -13,7 +12,7 @@ namespace HexTecGames.Basics.Editor
 {
     public class GitHelperWindow : EditorWindow
     {
-        [SerializeField] private string rootPath = "C:\\Users\\Patrick\\Documents\\Projects\\Unity";
+        [SerializeField] private string directoryPath;
 
         private List<string> folderPaths = new List<string>();
         private List<string> hasChangesPaths = new List<string>();
@@ -21,22 +20,37 @@ namespace HexTecGames.Basics.Editor
         private string helpText;
         private string changedPackageNames;
 
+        private Vector2 scrollPos;
+        private const string PATH_SAVE_KEY = "UNITY_PROJECTS_PATH";
+        private const string DEFAULT_PATH = "C:\\Users\\NAME\\Documents\\Projects\\Unity";
+
         [MenuItem("Tools/Git Helper")]
         public static void ShowWindow()
         {
             GetWindow(typeof(GitHelperWindow));
+           
         }
 
         private void OnEnable()
         {
-            GetSubFolders();
+            directoryPath = EditorPrefs.GetString(PATH_SAVE_KEY, DEFAULT_PATH);
+            if (directoryPath == DEFAULT_PATH)
+            {
+                return;
+            }
             titleContent = new GUIContent("Git Helper");
+            GetSubFolders();
+        }
+
+        private void OnDisable()
+        {
+            EditorPrefs.SetString(PATH_SAVE_KEY, directoryPath);
         }
 
         private void OnGUI()
         {
             EditorGUILayout.LabelField("Path");
-            rootPath = EditorGUILayout.TextField(label: string.Empty, rootPath);
+            directoryPath = EditorGUILayout.TextField(label: string.Empty, directoryPath);
 
             EditorGUILayout.Space();
 
@@ -59,7 +73,7 @@ namespace HexTecGames.Basics.Editor
                 if (GUILayout.Button("Start", GUILayout.Height(30)))
                 {
                     GetSubFolders();
-                    var result = GetWindow(typeof(GitItemWindow)) as GitItemWindow;
+                    GitItemWindow result = GetWindow(typeof(GitItemWindow)) as GitItemWindow;
                     result.Setup(hasChangesPaths);
                 }
             }
@@ -68,11 +82,15 @@ namespace HexTecGames.Basics.Editor
                 EditorGUILayout.HelpBox(helpText, MessageType.Info);
             }
 
-            EditorGUILayout.LabelField(changedPackageNames, GUILayout.ExpandHeight(true));
+            GUIStyle textAreaStyle = new GUIStyle(EditorStyles.textArea);
+            textAreaStyle.wordWrap = false;
+            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
+            GUILayout.TextArea(changedPackageNames, textAreaStyle, GUILayout.ExpandHeight(true));
+            EditorGUILayout.EndScrollView();
         }
-        List<string> GetFilteredDirectories(string rootPath)
+        private List<string> GetFilteredDirectories(string rootPath)
         {
-            var result = new List<string>();
+            List<string> result = new List<string>();
 
             void Search(string currentPath)
             {
@@ -85,7 +103,7 @@ namespace HexTecGames.Basics.Editor
                 }
 
                 // Otherwise, recurse into each subfolder
-                foreach (var subDir in Directory.GetDirectories(currentPath))
+                foreach (string subDir in Directory.GetDirectories(currentPath))
                 {
                     Search(subDir);
                 }
@@ -97,16 +115,16 @@ namespace HexTecGames.Basics.Editor
 
         private void GetSubFolders()
         {
-            if (string.IsNullOrEmpty(rootPath))
+            if (string.IsNullOrEmpty(directoryPath))
             {
                 return;
             }
 
-            folderPaths = GetFilteredDirectories(rootPath);
+            folderPaths = GetFilteredDirectories(directoryPath);
 
             hasChangesPaths = new List<string>();
             List<string> packageNamesWithChanges = new List<string>();
-            foreach (var path in folderPaths)
+            foreach (string path in folderPaths)
             {
                 if (HasChanges(path))
                 {
@@ -120,7 +138,7 @@ namespace HexTecGames.Basics.Editor
 
         private bool HasChanges(string path)
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = "git",
                 Arguments = "status --porcelain",
@@ -131,7 +149,7 @@ namespace HexTecGames.Basics.Editor
                 WorkingDirectory = path
             };
 
-            using (var gitProcess = Process.Start(psi))
+            using (Process gitProcess = Process.Start(psi))
             {
                 string output = gitProcess.StandardOutput.ReadToEnd();
                 string error = gitProcess.StandardError.ReadToEnd();

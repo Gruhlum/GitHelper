@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -12,23 +11,24 @@ namespace HexTecGames.Basics.Editor
 {
     public class GitItemWindow : EditorWindow
     {
-        int selectedIndex = 1;
-        string displayName;
-        string fullPath;
-        string commitMessage = "fixes";
-        List<string> modifiedFiles = new List<string>();
-        VersionNumber currentVersion;
-        VersionNumber nextVersion;
-        string helpText;
+        private int selectedIndex = 1;
+        private string displayName;
+        private string fullPath;
+        private string commitMessage = "fixes";
+        private List<string> modifiedFiles = new List<string>();
+        private VersionNumber currentVersion;
+        private VersionNumber nextVersion;
+        private string helpText;
 
-        string changeText;
-        string shortStats;
+        private string changeText;
+        private string shortStats;
 
-        GUIStyle centerTextAlignmentStyle;
+        private GUIStyle centerTextAlignmentStyle;
 
         private List<string> allPaths;
         private int packageIndex = 0;
-        bool isComplete;
+        private bool isComplete;
+        private Vector2 scrollPos;
 
         private void OnEnable()
         {
@@ -61,7 +61,7 @@ namespace HexTecGames.Basics.Editor
             }
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Commit Message");
-            EditorGUILayout.TextArea(commitMessage, GUILayout.Height(32));
+            EditorGUILayout.TextArea(commitMessage, GUILayout.Height(36));
 
             if (isComplete)
             {
@@ -90,7 +90,13 @@ namespace HexTecGames.Basics.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(shortStats, centerTextAlignmentStyle);
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField(changeText, GUILayout.ExpandHeight(true));
+
+            GUIStyle textAreaStyle = new GUIStyle(EditorStyles.textArea);
+            textAreaStyle.wordWrap = false;
+            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
+            GUILayout.TextArea(changeText, textAreaStyle, GUILayout.ExpandHeight(true));
+            EditorGUILayout.EndScrollView();
+
         }
         public void Setup(List<string> paths)
         {
@@ -120,6 +126,7 @@ namespace HexTecGames.Basics.Editor
         private void SetupNextItem()
         {
             selectedIndex = 1;
+            commitMessage = "fixes";
             packageIndex++;
             Setup(allPaths[packageIndex]);
         }
@@ -132,7 +139,7 @@ namespace HexTecGames.Basics.Editor
             }
 
             // Run Git commands separately
-            var lastDirectory = Directory.GetCurrentDirectory();
+            string lastDirectory = Directory.GetCurrentDirectory();
             Directory.SetCurrentDirectory(fullPath);
             RunGitCommand("add .");
             RunGitCommand($"commit -m \"{commitMessage}\"");
@@ -142,7 +149,7 @@ namespace HexTecGames.Basics.Editor
         }
         private string RunGitCommand(string arguments)
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = "git",
                 Arguments = arguments,
@@ -152,7 +159,7 @@ namespace HexTecGames.Basics.Editor
                 CreateNoWindow = true
             };
 
-            using (var process = Process.Start(psi))
+            using (Process process = Process.Start(psi))
             {
                 string error = process.StandardError.ReadToEnd();
 
@@ -169,13 +176,13 @@ namespace HexTecGames.Basics.Editor
             string fullFilePath = path + "\\package.json";
             string jsonText = File.ReadAllText(fullFilePath);
             // "version": "4.1.6"
-            jsonText = jsonText.Replace($"\"version\": \"{currentVersion.ToString()}\"", $"\"version\": \"{nextVersion.ToString()}\"");
+            jsonText = jsonText.Replace($"\"version\": \"{currentVersion}\"", $"\"version\": \"{nextVersion}\"");
             File.WriteAllText(fullFilePath, jsonText);
         }
 
         private string GetShortStats(string path)
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = "git",
                 Arguments = "diff HEAD --shortstat",
@@ -186,7 +193,7 @@ namespace HexTecGames.Basics.Editor
                 WorkingDirectory = path
             };
 
-            using (var gitProcess = Process.Start(psi))
+            using (Process gitProcess = Process.Start(psi))
             {
                 string output = gitProcess.StandardOutput.ReadToEnd();
                 string error = gitProcess.StandardError.ReadToEnd();
@@ -207,7 +214,7 @@ namespace HexTecGames.Basics.Editor
 
         public List<string> GetModifiedFileNames(string path)
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = "git",
                 Arguments = "status --porcelain",
@@ -218,9 +225,9 @@ namespace HexTecGames.Basics.Editor
                 WorkingDirectory = path
             };
 
-            var results = new List<string>();
+            List<string> results = new List<string>();
 
-            using (var gitProcess = Process.Start(psi))
+            using (Process gitProcess = Process.Start(psi))
             {
                 string output = gitProcess.StandardOutput.ReadToEnd();
                 string error = gitProcess.StandardError.ReadToEnd();
@@ -231,9 +238,9 @@ namespace HexTecGames.Basics.Editor
                     Debug.LogWarning($"Git error in '{path}': {error.Trim()}");
                 }
 
-                var lines = output.Split('\n');
+                string[] lines = output.Split('\n');
 
-                foreach (var line in lines)
+                foreach (string line in lines)
                 {
                     if (line.Length < 3) continue;
 
@@ -254,7 +261,7 @@ namespace HexTecGames.Basics.Editor
             return results;
         }
 
-        static string GetJsonValue(string json, string key)
+        private static string GetJsonValue(string json, string key)
         {
             string search = $"\"{key}\":";
             int index = json.IndexOf(search);

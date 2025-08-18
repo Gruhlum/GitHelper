@@ -26,7 +26,7 @@ namespace HexTecGames.Basics.Editor
         private GUIStyle centerTextAlignmentStyle;
 
         private List<string> allPaths;
-        private int packageIndex = 0;
+        private int repoIndex = 0;
         private bool isComplete;
         private Vector2 scrollPos;
 
@@ -101,8 +101,8 @@ namespace HexTecGames.Basics.Editor
         public void Setup(List<string> paths)
         {
             allPaths = paths;
-            packageIndex = 0;
-            Setup(allPaths[packageIndex]);
+            repoIndex = 0;
+            Setup(allPaths[repoIndex]);
         }
         private void Setup(string path)
         {
@@ -127,8 +127,8 @@ namespace HexTecGames.Basics.Editor
         {
             selectedIndex = 1;
             commitMessage = "fixes";
-            packageIndex++;
-            Setup(allPaths[packageIndex]);
+            repoIndex++;
+            Setup(allPaths[repoIndex]);
         }
 
         private string Run()
@@ -209,7 +209,7 @@ namespace HexTecGames.Basics.Editor
         }
         private bool CheckIfComplete()
         {
-            return packageIndex >= allPaths.Count - 1;
+            return repoIndex >= allPaths.Count - 1;
         }
 
         public List<string> GetModifiedFileNames(string path)

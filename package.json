@@ -1,6 +1,6 @@
 {
   "name": "com.hextecgames.githelper",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "displayName": "GitHelper",
   "description": "This package makes it easy to work with multiple git repositories inside a Unity project.\nAutomatically finds any repositories with changes and allows for commiting and pushing with a single button.\nCan detect packages and offers the ability to increase the version number.",
   "unity": "2022.1",

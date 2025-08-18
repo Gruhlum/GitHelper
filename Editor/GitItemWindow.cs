@@ -27,7 +27,6 @@ namespace HexTecGames.Basics.Editor
 
         private List<string> allPaths;
         private int repoIndex = 0;
-        private bool isComplete;
         private Vector2 scrollPos;
 
         private void OnEnable()
@@ -63,24 +62,14 @@ namespace HexTecGames.Basics.Editor
             EditorGUILayout.LabelField("Commit Message");
             commitMessage = EditorGUILayout.TextArea(commitMessage, GUILayout.Height(36));
 
-            if (isComplete)
+            if (GUILayout.Button("Add, Commit & Push", GUILayout.Height(30)))
             {
-                if (GUILayout.Button("Close", GUILayout.Height(30)))
+                changeText = Run();
+                if (CheckIfComplete())
                 {
                     Close();
                 }
-            }
-            else
-            {
-                if (GUILayout.Button("Add, Commit & Push", GUILayout.Height(30)))
-                {
-                    changeText = Run();
-                    isComplete = CheckIfComplete();
-                    if (!isComplete)
-                    {
-                        SetupNextItem();
-                    }
-                }
+                else SetupNextItem();
             }
 
             if (!string.IsNullOrEmpty(helpText))

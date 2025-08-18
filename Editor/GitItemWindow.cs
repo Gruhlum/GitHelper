@@ -61,7 +61,7 @@ namespace HexTecGames.Basics.Editor
             }
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Commit Message");
-            EditorGUILayout.TextArea(commitMessage, GUILayout.Height(36));
+            commitMessage = EditorGUILayout.TextArea(commitMessage, GUILayout.Height(36));
 
             if (isComplete)
             {

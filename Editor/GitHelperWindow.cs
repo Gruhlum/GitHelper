@@ -28,7 +28,6 @@ namespace HexTecGames.Basics.Editor
         public static void ShowWindow()
         {
             GetWindow(typeof(GitHelperWindow));
-           
         }
 
         private void OnEnable()

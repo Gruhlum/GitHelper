@@ -64,10 +64,11 @@ namespace HexTecGames.Basics.Editor
 
             if (GUILayout.Button("Add, Commit & Push", GUILayout.Height(30)))
             {
-                changeText = Run();
+                Run();
                 if (CheckIfComplete())
                 {
                     Close();
+                    return;
                 }
                 else SetupNextItem();
             }

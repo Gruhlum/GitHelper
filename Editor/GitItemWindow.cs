@@ -128,6 +128,8 @@ namespace HexTecGames.Basics.Editor
         private void SetupNextItem()
         {
             selectedIndex = 1;
+            GUIUtility.keyboardControl = 0;
+            GUIUtility.hotControl = 0;
             commitMessage = "fixes";
             repoIndex++;
             Setup(allPaths[repoIndex]);

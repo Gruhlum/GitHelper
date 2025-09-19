@@ -60,17 +60,18 @@ namespace HexTecGames.Basics.Editor
             }
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Commit Message");
-            commitMessage = EditorGUILayout.TextArea(commitMessage, GUILayout.Height(36));
+            var commitInput = EditorGUILayout.TextArea(commitMessage, GUILayout.Height(36));
 
             if (GUILayout.Button("Add, Commit & Push", GUILayout.Height(30)))
             {
                 Run();
-                if (CheckIfComplete())
-                {
-                    Close();
-                    return;
-                }
-                else SetupNextItem();
+                AdvanceItem();
+            }
+            else commitMessage = commitInput;
+
+            if (GUILayout.Button("Skip", GUILayout.Height(30)))
+            {
+                AdvanceItem();
             }
 
             if (!string.IsNullOrEmpty(helpText))
@@ -88,6 +89,17 @@ namespace HexTecGames.Basics.Editor
             EditorGUILayout.EndScrollView();
 
         }
+
+        private void AdvanceItem()
+        {
+            if (CheckIfComplete())
+            {
+                Close();
+                return;
+            }
+            else SetupNextItem();
+        }
+
         public void Setup(List<string> paths)
         {
             allPaths = paths;

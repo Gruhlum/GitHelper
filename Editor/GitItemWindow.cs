@@ -13,6 +13,7 @@ namespace HexTecGames.Basics.Editor
     {
         private int selectedIndex = 1;
         private string displayName;
+        private string branchName;
         private string fullPath;
         private string commitMessage = "fixes";
         private List<string> modifiedFiles = new List<string>();
@@ -45,6 +46,7 @@ namespace HexTecGames.Basics.Editor
             }
 
             EditorGUILayout.LabelField("Name:", displayName);
+            EditorGUILayout.LabelField("Branch:", branchName);
 
             if (currentVersion != null && nextVersion != null)
             {
@@ -121,6 +123,7 @@ namespace HexTecGames.Basics.Editor
             }
             else displayName = new DirectoryInfo(path).Name;
 
+            branchName = GetCurrentBranch(path);
             modifiedFiles = GetModifiedFileNames(path);
             changeText = string.Join(Environment.NewLine, modifiedFiles);
             shortStats = GetShortStats(path);
@@ -151,30 +154,7 @@ namespace HexTecGames.Basics.Editor
             Directory.SetCurrentDirectory(lastDirectory);
             return pushOutput;
         }
-        private string RunGitCommand(string arguments)
-        {
-            ProcessStartInfo psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using (Process process = Process.Start(psi))
-            {
-                string error = process.StandardError.ReadToEnd();
-
-                process.WaitForExit();
-                if (!string.IsNullOrEmpty(error))
-                {
-                    Debug.Log(error);
-                }
-                return error;
-            }
-        }
+       
         private void IncreasePackageVersion(string path)
         {
             string fullFilePath = path + "\\package.json";
@@ -184,82 +164,70 @@ namespace HexTecGames.Basics.Editor
             File.WriteAllText(fullFilePath, jsonText);
         }
 
-        private string GetShortStats(string path)
-        {
-            ProcessStartInfo psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = "diff HEAD --shortstat",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = path
-            };
-
-            using (Process gitProcess = Process.Start(psi))
-            {
-                string output = gitProcess.StandardOutput.ReadToEnd();
-                string error = gitProcess.StandardError.ReadToEnd();
-                gitProcess.WaitForExit();
-
-                if (!string.IsNullOrWhiteSpace(error))
-                {
-                    Debug.LogWarning($"Git error in '{path}': {error.Trim()}");
-                }
-
-                return output.Trim().Split('\n').LastOrDefault() ?? string.Empty;
-            }
-        }
         private bool CheckIfComplete()
         {
             return repoIndex >= allPaths.Count - 1;
         }
-
-        public List<string> GetModifiedFileNames(string path)
+        private static string RunGitCommand(string arguments, string workingDirectory = null)
         {
-            ProcessStartInfo psi = new ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
                 FileName = "git",
-                Arguments = "status --porcelain",
+                Arguments = arguments,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = path
+                CreateNoWindow = true
             };
 
-            List<string> results = new List<string>();
-
-            using (Process gitProcess = Process.Start(psi))
+            if (!string.IsNullOrEmpty(workingDirectory))
             {
-                string output = gitProcess.StandardOutput.ReadToEnd();
-                string error = gitProcess.StandardError.ReadToEnd();
-                gitProcess.WaitForExit();
+                psi.WorkingDirectory = workingDirectory;
+            }
+
+            using (var process = Process.Start(psi))
+            {
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
 
                 if (!string.IsNullOrWhiteSpace(error))
                 {
-                    Debug.LogWarning($"Git error in '{path}': {error.Trim()}");
+                    Debug.LogWarning($"Git error: {error.Trim()}");
                 }
 
-                string[] lines = output.Split('\n');
+                return output.Trim();
+            }
+        }
 
-                foreach (string line in lines)
-                {
-                    if (line.Length < 3) continue;
+        public static string GetShortStats(string path)
+        {
+            string output = RunGitCommand("diff HEAD --shortstat", path);
+            return output.Split('\n').LastOrDefault() ?? string.Empty;
+        }
 
-                    string statusCode = line.Substring(0, 2);
-                    if (statusCode == "??")
-                    {
-                        statusCode = " A";
-                    }
-                    string filePath = line.Substring(3);
+        public static string GetCurrentBranch(string path)
+        {
+            string output = RunGitCommand("rev-parse --abbrev-ref HEAD", path);
+            return string.IsNullOrWhiteSpace(output) ? "(unknown branch)" : output;
+        }
 
-                    if (filePath.EndsWith(".cs.meta")) continue;
+        public static List<string> GetModifiedFileNames(string path)
+        {
+            string output = RunGitCommand("status --porcelain", path);
+            var results = new List<string>();
 
-                    string result = $"{statusCode}\t{filePath}";
-                    results.Add(result);
-                }
+            foreach (string line in output.Split('\n'))
+            {
+                if (line.Length < 3) continue;
+
+                string statusCode = line.Substring(0, 2);
+                if (statusCode == "??") statusCode = " A";
+
+                string filePath = line.Substring(3);
+                if (filePath.EndsWith(".cs.meta")) continue;
+
+                results.Add($"{statusCode}\t{filePath}");
             }
 
             return results;

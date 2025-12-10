@@ -217,17 +217,15 @@ namespace HexTecGames.Basics.Editor
             string output = RunGitCommand("status --porcelain", path);
             var results = new List<string>();
 
-            foreach (string line in output.Split('\n'))
-            {
-                if (line.Length < 3) continue;
-
-                string statusCode = line.Substring(0, 2);
-                if (statusCode == "??") statusCode = " A";
-
-                string filePath = line.Substring(3);
-                if (filePath.EndsWith(".cs.meta")) continue;
-
-                results.Add($"{statusCode}\t{filePath}");
+            foreach(string line in output.Split('\n'))
+{
+                var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 2)
+                {
+                    string statusCode = parts[0];
+                    string filePath = parts[1];
+                    results.Add($"{statusCode}\t{filePath}");
+                }
             }
 
             return results;

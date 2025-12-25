@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -154,7 +155,7 @@ namespace HexTecGames.Basics.Editor
             Directory.SetCurrentDirectory(lastDirectory);
             return pushOutput;
         }
-       
+
         private void IncreasePackageVersion(string path)
         {
             string fullFilePath = path + "\\package.json";
@@ -168,7 +169,7 @@ namespace HexTecGames.Basics.Editor
         {
             return repoIndex >= allPaths.Count - 1;
         }
-        private static string RunGitCommand(string arguments, string workingDirectory = null)
+        public static string RunGitCommand(string arguments, string workingDirectory = null)
         {
             var psi = new ProcessStartInfo
             {
@@ -179,24 +180,28 @@ namespace HexTecGames.Basics.Editor
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-
-            if (!string.IsNullOrEmpty(workingDirectory))
+            psi.EnvironmentVariables["GIT_TERMINAL_PROMPT"] = "0";
+            psi.EnvironmentVariables["GCM_INTERACTIVE"] = "Never";
+            if (!string.IsNullOrEmpty(workingDirectory)) { psi.WorkingDirectory = workingDirectory; }
+            var output = new StringBuilder();
+            var error = new StringBuilder();
+            using (var process = new Process { StartInfo = psi })
             {
-                psi.WorkingDirectory = workingDirectory;
-            }
+                process.OutputDataReceived += (s, e) => { if (e.Data != null) output.AppendLine(e.Data); };
+                process.ErrorDataReceived += (s, e) => { if (e.Data != null) error.AppendLine(e.Data); };
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
-            using (var process = Process.Start(psi))
-            {
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
-
-                if (!string.IsNullOrWhiteSpace(error))
+                if (!process.WaitForExit(10000))
                 {
-                    Debug.LogWarning($"Git error: {error.Trim()}");
+                    process.Kill(); Debug.LogWarning("Git command timed out");
                 }
-
-                return output.Trim();
+                if (error.Length > 0)
+                {
+                    Debug.LogWarning($"Git error: {error}");
+                }
+                return output.ToString().Trim();
             }
         }
 
@@ -217,8 +222,8 @@ namespace HexTecGames.Basics.Editor
             string output = RunGitCommand("status --porcelain", path);
             var results = new List<string>();
 
-            foreach(string line in output.Split('\n'))
-{
+            foreach (string line in output.Split('\n'))
+            {
                 var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length >= 2)
                 {
